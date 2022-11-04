@@ -1,0 +1,52 @@
+################################################################################
+# this is config file for SIMULATOR. Be aware when edit
+# syntax of this file is: <config name>:<value>
+# no value should be set to '-'
+# 12/10/2020 by Nguyen Phuong Bac
+################################################################################
+
+# config relate to DEM
+dem_file_path:-
+dem_sampling:1
+dem_iterpolation_algo:cubic
+dem_crs:-
+
+#config relate to ephemeris. .stq for skytraq and .SP3 for satellite orbit file
+sp3_file_path:grg19090.sp3
+skytraq_file_path:-
+
+#config relate to receiver and antena properties
+receiver_height:15.695
+receiver_longitude:105.863580555761
+receiver_latitude:21.0455555507515
+receiver_eheight:5.00006392132491
+
+
+#config relate to earth mathematical model
+semi_major_WGS84:6378137
+semi_minor_WGS84:6356752.3142
+1pf_WGS84:298.257223563
+earth_rotation_speed:7.292115e-05
+gravitation-l_constant:398600441800000
+
+#config relate to tropospheric
+tropospheric_correction:no
+AMFX_satellite_filepath:-
+AMFX_station_filepath:-
+AMFX_station_name:-
+
+#wavelength config. avaiable: L1, L2, L5 (not avaiable if skytraq log file imported)
+wavelength:L1
+
+tolerance:1e-07
+low_vertical_mask:0
+up_vertical_mask:90
+low_horizontal_mask:0
+up_horizontal_mask:360
+# algorithm avaiable: sphere, ellipse, plane
+algorithm:sphere
+free:-
+
+
+
+

@@ -1,0 +1,13 @@
+name: fst_viewer
+title: fst_viewer
+username:
+account: hanoi-polution
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6075079
+bundleId: 5791317
+url: https://phuongbac.shinyapps.io/fst_viewer/
+when: 1649786731.69386
+lastSyncTime: 1649786731.69391
+asMultiple: FALSE
+asStatic: FALSE

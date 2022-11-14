@@ -4,7 +4,10 @@
 # no value should be set to '-'
 # 12/10/2020 by Nguyen Phuong Bac
 ################################################################################
-
+#config relate to sp3
+sp3_suffix:"WUM0MGXULA_"
+sp3_ftp:"ftp://igs.ign.fr/pub/igs/products/mgex/"
+gps_time_offset:315964782
 # config relate to DEM
 dem_file_path:-
 dem_sampling:1
@@ -20,14 +23,17 @@ receiver_height:15.695
 receiver_longitude:105.863580555761
 receiver_latitude:21.0455555507515
 receiver_eheight:5.00006392132491
-
+mask_ver_max:25
+mask_ver_min:2
+mask_hor_max:360
+mask_hor_min:0
 
 #config relate to earth mathematical model
 semi_major_WGS84:6378137
 semi_minor_WGS84:6356752.3142
 1pf_WGS84:298.257223563
 earth_rotation_speed:7.292115e-05
-gravitation-l_constant:398600441800000
+gravitational_constant:398600441800000
 
 #config relate to tropospheric
 tropospheric_correction:no

@@ -15,7 +15,6 @@
 #' @return A dataframe of satellite position and the corresponding time
 SP3.read <- function(path_input = "sp3.fileuz") {
   sp3_p = ""
-  print(paste(path_input, sp3_p, sep = ''))
   file <- file(paste(path_input, sp3_p, sep = ''), open = "r")
   lines_p <-
     strsplit(gsub("\\s+", " ", gsub(
@@ -127,16 +126,17 @@ sp3.downloader <-
 
 require(RCurl)
 require(lubridate)
-sp3.getLink <- function(timestamp) {
+sp3.getLink <- function(timestamp, sp3_path = ".") {
+  print("get link for sp3")
   time = as.numeric(timestamp)
-  date = as_datetime(timestamp, origin = "1980-01-06")
+  date = as_datetime(timestamp, origin = "1980-1-6")
   week = floor(time/604800)
   year = year(date)
   day_of_year = yday(date)
-  temp.file = paste0(sp3_suffix,
+  temp.file = paste0(param["sp3_suffix"],
                      year,
                      sprintf("%03d", day_of_year))
-  list.sp3 = list.files(path = sp3_path, pattern=sp3_suffix)
+  list.sp3 = list.files(path = sp3_path, pattern=param["sp3_suffix"])
   sp3.avai = list.sp3[grep(temp.file, list.sp3)]
   if(length(sp3.avai>2)) sp3.avai = sp3.avai[[1]]
   if (length(sp3.avai)>0) {
@@ -145,9 +145,9 @@ sp3.getLink <- function(timestamp) {
     }
     return(paste0(sp3_path,sp3.avai))
   }
-  temp.link = paste0(sp3_ftp,
+  temp.link = paste0(param["sp3_ftp"],
                      week,
-                     "/",sp3_suffix,
+                     "/",param["sp3_suffix"],
                      year,
                      sprintf("%03d", day_of_year),
                      "*")
@@ -162,10 +162,10 @@ sp3.getLink <- function(timestamp) {
       dirlistonly = TRUE
     )
   
-  result = paste(sp3_ftp, week , "/", strsplit(result, "\r*\n")[[1]], sep = "")
+  result = paste(param["sp3_ftp"], week , "/", strsplit(result, "\r*\n")[[1]], sep = "")
   pattern.list = c(paste0("/",
                           week,
-                          "/", sp3_suffix,
+                          "/", param["sp3_suffix"],
                           year,
                           sprintf("%03d", day_of_year)),
                    "_ORB.SP3.gz")
@@ -182,14 +182,14 @@ sp3.getFileNamFromLink <- function(link) {
 sp3.download <- function(link, path) {
   print(paste("Start to download sp3 from ", link, "to", path))
   file.name = tail(strsplit(link, "/")[[1]], 1)
-  if (file.exists(paste0(sp3_path, strsplit(file.name, ".gz")[[1]][1]))) {
-    print("existed... exit...")
-    return(strsplit(file.name, ".gz")[[1]][1])
-  }
+  # if (file.exists(paste0(sp3_path, strsplit(file.name, ".gz")[[1]][1]))) {
+  #   print("existed... exit...")
+  #   return(strsplit(file.name, ".gz")[[1]][1])
+  # }
   xfun::download_file(link,
-                paste0(path, file.name),
+                paste0(path,"/", file.name),
                 mode = 'wb',
-                quiet = T)
+                quiet = F)
   R.utils::gunzip(paste0(path, "/", file.name),
                   overwrite = T,
                   remove = T)

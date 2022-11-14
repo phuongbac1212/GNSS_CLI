@@ -1,5 +1,6 @@
 library(splus2R) # Loading of the splus2R library
 library(pixmap)
+library(DescTools)
 
 source('pos2geo.R')
 source('geo2pos.R')
@@ -10,19 +11,41 @@ source('reflexion_algo_gleason.R')
 source('reflexion_algo_helm.R')
 source('equ_ellipsoide.R')
 source("coord_pts_tangente.R")
+source("calculate_azimuth_elevation.R")
 source("sp3.R")
+source("surf_Fresnel.r")
 source("read_parameter.R")
 # STATIC CASE ONLY
 principal <- function(input) {
   parameter.update.from.input(input)
   sp3.file = param["sp3_file_path"]
-  sp3 = SP3.read(sp3.file)[1:1000, ]
+  sp3 = data.frame(SP3.read(sp3.file))
+  sp3 = filter(sp3, ID == "PG01")
+  pos_R_geo = as.numeric(c(lon = param["receiver_longitude"], lat = param["receiver_latitude"], he = param["receiver_height"]))
+  pos_R_xyz = geo2pos(as.numeric(param["semi_major_WGS84"]), as.numeric(param["semi_minor_WGS84"]), pos_R_geo)
+  sp3 = tibble::add_column(
+    sp3,
+    calculate_azimuth_elevation(
+      as.numeric(sp3$X),
+      as.numeric(sp3$Y),
+      as.numeric(sp3$Z),
+      pos_R_xyz[1],
+      pos_R_xyz[2],
+      pos_R_xyz[3]
+    )
+  )
+  sp3 = filter(sp3,
+               elevation >= as.numeric(param["mask_ver_min"]) /180*pi &
+                 elevation <= as.numeric(param["mask_ver_max"])/180*pi  &
+                 azimuth >= as.numeric(param["mask_hor_min"])/180*pi  &
+                 azimuth <= as.numeric(param["mask_hor_max"])/180*pi )
+  
   pos_E_xyz = cbind(as.numeric(sp3[, 2]), as.numeric(sp3[, 3]), as.numeric(sp3[, 4]))
   pos_E_xyz = asplit(pos_E_xyz, MARGIN = 1)
   
   # Calculation of the ellipsoid similar to the WGS84 ellipsoid, going through the ground projection of the receiver (= receiver with a zero altitude)
-  pos_R_geo = as.numeric(c(lon = param["receiver_longitude"], lat = param["receiver_latitude"], he = param["receiver_height"]))
-  pos_R_xyz = geo2pos(as.numeric(param["semi_major_WGS84"]), as.numeric(param["semi_minor_WGS84"]), pos_R_geo)
+  
+  
   ellipsoide_sol <-
     equ_ellipsoide(as.numeric(param["semi_major_WGS84"]),
                    as.numeric(param["semi_minor_WGS84"]),
@@ -120,11 +143,15 @@ principal <- function(input) {
     sin_elevation_satellite[sin_elevation_satellite >= 1] = -1
     elevation_satellite <- asin(sin_elevation_satellite)
     
+    
+    
     # equation of the local plane
     d <-
       -(a * pos_Rsol_xyz[1] + b * pos_Rsol_xyz[2] + c1 * pos_Rsol_xyz[3])
     distance_plan <-
-      abs(unlist(lapply(pos_E_xyz, FUN = dist_plan, equ_plan = c(a, b, c1, d))))
+      abs(unlist(lapply(
+        pos_E_xyz, FUN = dist_plan, equ_plan = c(a, b, c1, d)
+      )))
     # normal distance from the satellite to the local plane
     if (param["algorithm"] == 'ellipsoid') {
       # If the user wants to use the ellipsoid algorithm
@@ -146,6 +173,7 @@ principal <- function(input) {
     
     else if (param["algorithm"] == 'plane') {
       source('reflexion_algo_plan.R')
+      print("Plane")
       pos_R_geo <- pos2geo(R_0_sol, R_p_sol, pos_R_xyz)
       pos_Rfictif_geo <-
         c(pos_R_geo[1],
@@ -169,35 +197,60 @@ principal <- function(input) {
             b,
             c1,
             d
-          ), mc.cores = 4
+          ),
+          mc.cores = 4
         ) # We calculate the reflection point position
       pos_S_xyz <- t(pos_S)[, c(2, 3, 4)]
       pos_S_xyz = as.data.frame(pos_S_xyz)
-      pos_S_geo <- apply(pos_S_xyz, 1, pos2geo, R_0 = as.numeric(param["semi_major_WGS84"]),
-                           R_p = as.numeric(param["semi_minor_WGS84"]))
-      closeAllConnections()
-      pos_S_geo = t(pos_S_geo)
-    }
-    else if (param["algorithm"] == 'sphere') {
-      # If the user wants to use the sphere algorithm
-      pos_S <- mcmapply(reflexion_algo_helm,
-          R_gaussian,
-          pos_centre_xyz,
-          pos_E_xyz,
-          pos_R_xyz,
-          elevation_satellite,
-          as.numeric(param["receiver_height"]),
-          param["tolerance"]
-        )
-      
       pos_S_geo <-
         apply(pos_S_xyz,
               1,
               pos2geo,
               R_0 = as.numeric(param["semi_major_WGS84"]),
               R_p = as.numeric(param["semi_minor_WGS84"]))
-      R_sphere <- as.numeric(pos_S[7])
+      closeAllConnections()
+      pos_S_geo = t(pos_S_geo)
+    }
+    else if (param["algorithm"] == 'sphere') {
+      print("sphere")
+      # If the user wants to use the sphere algorithm
+      pos_S_xyz <- mcmapply(
+        reflexion_algo_helm,
+        pos_E_xyz = pos_E_xyz,
+        elevation = elevation_satellite,
+        MoreArgs = list(
+          R_T = R_gaussian,
+          pos_centre_xyz = pos_centre_xyz,
+          pos_R_xyz = pos_R_xyz,
+          hauteur = as.numeric(param["receiver_height"]),
+          tolerance_helm = param["tolerance"]
+        )
+      )
+      pos_S_xyz = data.frame(t(pos_S_xyz))[, c(2, 3, 4)]
+      pos_S_geo <-
+        apply(pos_S_xyz,
+              1,
+              pos2geo,
+              R_0 = as.numeric(param["semi_major_WGS84"]),
+              R_p = as.numeric(param["semi_minor_WGS84"]))
+      pos_S_geo = t(pos_S_geo)
+      #R_sphere <- as.numeric(pos_S[7])
     }
   }
-  return(tibble::add_column(data.frame(pos_S_geo), sp3[,1], ID = sp3[,"ID"]))
+  wavelength = 299792458 / switch(param["wavelength"],
+                                  "L1" = 1575420000,
+                                  "L2" = 1227600000,
+                                  "L5" = 1176000000)
+  result_fresnel <- mapply(
+    surf_Fresnel,
+    lambda = wavelength,
+    elev = elevation_satellite,
+    MoreArgs = list(hauteur = as.numeric(param["receiver_height"]))
+  )
+  
+  res = tibble::add_column(data.frame(t(result_fresnel)) ,
+                           data.frame(pos_S_geo),
+                           sp3)
+  names(res)[1:6] = c("a", "b", "c", "lon", "lat", "he")
+  return(res)
 }

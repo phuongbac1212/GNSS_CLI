@@ -21,8 +21,8 @@ source("read_parameter.R")
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
-  includeCSS("assert/css/dark_mode.css"),
-  
+  #includeCSS("assert/css/dark_mode.css"),
+  shinyjs::useShinyjs(),
   htmltools::htmlDependency(
     name = "font-awesome",
     version = "99.0",
@@ -49,34 +49,37 @@ shinyUI(fluidPage(
         column(4, numericInput("REC_eh", "elevation", param["receiver_eheight"]))
       ),
       br(),
-      shinyFilesButton(
-        'SAT_file',
-        'Select ephemeris file',
-        'Please select a .SP3, .alm or .pos file',
-        FALSE,
-        icon = icon("satellite")
+      fluidRow(
+        actionButton("SP3_down", "Down a new SP3"),
+        shinyFilesButton(
+          'SAT_file',
+          'Select ephemeris file',
+          'Please select a .SP3, .alm or .pos file',
+          FALSE,
+          icon = icon("satellite")
+        ),
       ),
       h1(strong("Program parameters")),
       h4("Satellite visibility"),
       numericRangeInput(
         "PARAM_visibility_ver",
         "Vertical Field of visibility",
-        value = c(0, 90)
+        value = c(param["mask_ver_min"], param["mask_ver_max"]),
+        min =0, max = 90
       ),
       numericRangeInput(
         "PARAM_visibility_hor",
         "Horizontal Field of visibility",
-        value = c(0, 360)
+        value = c(param["mask_hor_min"], param["mask_hor_max"]), 
+        min=0, max = 360
       ),
       radioButtons(
         "PARAM_algo",
         "Algorithm used for calculation",
         selected = param["algorithm"],
-        choices = c(
-          "ellipsoid",
-          "sphere",
-          "plane"
-        )
+        choices = c("ellipsoid",
+                    "sphere",
+                    "plane")
       ),
       icon = icon("gear", lib = "font-awesome"),
       h4("Satellite visibility"),
@@ -93,28 +96,27 @@ shinyUI(fluidPage(
       value = "tab1"
     ),
     tabPanel(
-      "Reflected",
+      "Reflected Point",
       leafletOutput("reflect_point_map"),
       value = "tab2",
       icon = icon("explosion")
     ),
     tabPanel(
-      "Map",
-      "contents3",
+      "Feshnel Zone",
+      leafletOutput("feshnel_zone"),
       value = "tab3",
       icon = icon("earth-asia")
     ),
     tabPanel(
-      "Parameter",
-      dt_output(
-        "Parameter for simulator",
-        'paramter_tab'
-      ),
-      fluidRow(actionButton("BTN_param_ok", "OK", icon = icon("check")),
-               actionButton("BTN_param_close", "Close", icon = icon("xmark")))
+      "Parameters",
+      dt_output("Parameter for simulator",
+                'paramter_tab'),
+      fluidRow(
+        actionButton("BTN_param_ok", "OK", icon = icon("check")),
+        actionButton("BTN_param_close", "Close", icon = icon("xmark"))
+      )
       ,
       value = "tab4"
     )
   )
 ))
-

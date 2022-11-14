@@ -4,8 +4,12 @@
 #
 ##################################################################
 library(data.table)
+library(shinyFiles)
 #read parameter before all
-
+volumes <-
+  c(Home = fs::path_home(),
+    "R Installation" = R.home(),
+    getVolumes()())
 parameter.read.raw = function() {
   file = "cfg/parameters_temp.tmp"
   param <<-
@@ -38,7 +42,8 @@ parameter.update.from.input <- function(input) {
   try(expr = {param["receiver_height"] <<- input$REC_height}, silent=T)
   try(expr = {param["receiver_latitude"] <<- input$input$REC_lat}, silent=T)
   try(expr = {param["receiver_longitude"] <<- input$REC_long}, silent=T)
-  try(expr = {param["sp3_file_path"] <<- parseFilePaths(roots = c(wd = '~'), input$SAT_file)$datapath}, silent=T)
+  try(expr = {param["sp3_file_path"] <<- parseFilePaths(roots =volumes ,input$SAT_file)$datapath}, silent=T)
+  # print(parseFilePaths(roots =volumes ,input$SAT_file))
   save(param, file = "cfg/parameters_temp.RDS")
 }
 
@@ -80,7 +85,7 @@ tryCatch(
   load("cfg/parameters_temp.RDS"),
   error = function(con) {
     print(paste("Cannot open parameter file [", con, "]"))
-    param = parameter.read.raw(input)
+    param = parameter.read.raw()
     print(paste("reading [", length(param), "] variables from raw file"))
   }
 )

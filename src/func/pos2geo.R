@@ -18,14 +18,15 @@ pos2geo <- function(pos_xyz, R_0=6378137,R_p=6356752.314245179497563967){
   # R_p : semi-minor axis of the given ellipsoid
   # pos_xyz : cartesian coordinates of the considered point
   #
-  
+  # print(pos_xyz)
   options(digits=22)   # To get enough digits for calculations
   
   # cartesian coordinates of the point                
-  x <- pos_xyz[1]
-  y <- pos_xyz[2]
-  z <- pos_xyz[3]
+  x <- pos_xyz[[1]]
+  y <- pos_xyz[[2]]
+  z <- pos_xyz[[3]]
   
+
   if(R_0==R_p){ # if the ellipsoid is a sphere
     e <- 0
     f <- 999999999999999999999999999999999999999999999999999999   # flatness = infinity

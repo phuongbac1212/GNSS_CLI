@@ -4,7 +4,10 @@ require(leaflet)
 require(raster)
 
 source("read_parameter.R")
-
+volumes <-
+  c(Home = fs::path_home(),
+    "R Installation" = R.home(),
+    getVolumes()())
 shinyServer(function(input, output, session) {
   # save(input, file= "cfg/input.RDS")
   
@@ -43,19 +46,82 @@ shinyServer(function(input, output, session) {
     input,
     'DEM_file',
     roots = c(wd = '~'),
-    #filetypes = c('', 'txt'),
-    defaultPath = '',
+    defaultPath = '~',
     defaultRoot = 'wd'
   )
   
+  shinyDirChoose(input,
+                 "SP3_dir_btn",
+                 roots = volumes,
+                 session = session)
+  
+  
   shinyFileChoose(
     input,
-    'SAT_file',
-    roots = c(wd = '~'),
-    filetypes = c('sp3', 'SP3', "alm", "pos"),
+    "SAT_file",
+    roots = volumes,
+    session = session,
+    filetypes = c('sp3', 'SP3', "alm", "pos")
   )
   
+  observeEvent(input$SP3_down, {
+    showModal(
+      modalDialog(
+        title =  "Donwload SP3",
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton("SP3_start_down", "OK")
+        ),
+        dateInput("SP3_date", label = "Choose a date to down!"),
+        shinyDirButton(
+          "SP3_dir_btn",
+          "Choose a place to save",
+          "Select where to save!"
+        ),
+        textOutput("SP3_console")
+      )
+    )
+  })
   
+  
+  
+  observeEvent(input$SP3_start_down, {
+    withCallingHandlers({
+      shinyjs::html(id = "SP3_console", html = "")
+      source("sp3.R")
+      time = as.numeric(as.POSIXct(input$SP3_date))
+      sp3_dir = parseDirPath(volumes , input$SP3_dir_btn)
+      
+      print(time)
+      print(sp3_dir)
+      
+      link = sp3.getLink(timestamp = 1668038400 - as.numeric(param["gps_time_offset"]))
+      sp3.download(link = link, path = sp3_dir)
+    },
+    message = function(m) {
+      shinyjs::html(id = "SP3_console",
+                    html = m$message,
+                    add = TRUE)
+    },
+    warning = function(m) {
+      shinyjs::html(id = "SP3_console",
+                    html = m$message,
+                    add = TRUE)
+    })
+    #
+    # output$SP3_console <- renderPrint({
+    #   source("sp3.R")
+    #   time = as.numeric(as.POSIXct(input$SP3_date))
+    #   sp3_dir = parseDirPath(volumes , input$SP3_dir_btn)
+    #
+    #   print(time)
+    #   print(sp3_dir)
+    #
+    #   link = sp3.getLink(timestamp = 1668038400- as.numeric(param["gps_time_offset"]))
+    #   sp3.download(link = link, path = sp3_dir)
+    #   # sp3.download(sp3.getLink(as.numeric(input$SP3_date))
+    # })
+  })
   
   observeEvent(input$DEM_display, {
     showModal(modalDialog(
@@ -86,19 +152,48 @@ shinyServer(function(input, output, session) {
   reflect_out <- eventReactive(input$BTN_start, {
     #updateTabsetPanel(session, "tabset_menu", 'tab2')
     source("shiny_principal.R")
-    require(randomcoloR)
-    pos_S_geo = principal(input)
-    colorPalette = randomColor(length(unique(pos_S_geo$ID)))
-    names(colorPalette) = unique(pos_S_geo$ID)
-    pos_S_geo$color = unlist(lapply(pos_S_geo$ID, FUN = function(x) {colorPalette[x]}))
-    leaflet() %>% 
-      addProviderTiles(provider = providers$Esri.WorldImagery) %>% 
-      addCircleMarkers(lng = pos_S_geo[,1], lat = pos_S_geo[,2], radius = 1, color = pos_S_geo$color) %>% 
-      setView(lng = as.numeric(param["receiver_longitude"]), lat = as.numeric(param["receiver_latitude"]), zoom = 16)
+    res = principal(input)
+    return(res)
   })
   
-  output$reflect_point_map <- renderLeaflet(reflect_out())
-  
+  output$reflect_point_map <- renderLeaflet({
+    res = reflect_out()
+    map = leaflet() %>% addTiles()
+    map %>% addCircleMarkers(lng = res$lon, lat = res$lat, radius = 1)
+  })
+  output$feshnel_zone <- renderLeaflet({
+    res = reflect_out()
+    map = leaflet() %>% addTiles()
+    ellipse = apply(res, 1, function(p, map) {
+      # print(p)
+      R = 637100
+      
+      dLat = as.numeric(p["a"]) / R
+      dLon = as.numeric((p["b"])) / (R * cos(pi * as.numeric(p["lat"]) /
+                                               180))
+      ell = DrawEllipse(
+        x = as.numeric(p["lon"]),
+        y = as.numeric(p["lat"]),
+        radius.y = dLon,
+        radius.x = dLat,
+        rot = as.numeric(p["azimuth"]),
+        plot = F
+      )
+      return(list(
+        lng = ell$x,
+        lat = ell$y,
+        ID = p["ID"]
+      ))
+      
+    })
+    
+    for (e in ellipse) {
+      e$lng[length(e$lng) + 1] = e$lng[1]
+      e$lat[length(e$lat) + 1] = e$lat[1]
+      map = map %>% addPolygons(lng = e$lng, lat = e$lat)
+    }
+    map
+  })
   output$paramter_tab = render_param_dt(param, "cell", options = list(pageLength = 100))
   
   observeEvent(input$BTN_start, {

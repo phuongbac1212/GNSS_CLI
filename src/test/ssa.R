@@ -62,7 +62,7 @@ res = location.filter(point.dataframe = res)
 res = my.outlier(res, c("time", "height"), 2, 2) %>% drop_na(height)
 res$group = substr(res$PRN, 2,2)
 
-gnss.data = res[, c("height", "time", "group")] %>% group_by(group) %>%
+gnss.data = res[, c("height", "time", "group")] %>% group_by(group = round(res$time, "hour")) %>%
   summarise_at(vars(height), list(h_mean_hour = mean))
 gnss.data$time = as.POSIXct(gnss.data$group)
 
@@ -86,8 +86,7 @@ for (m in (1:M)) {
   Z = apply(Z, 2, replace_na, 0)
   RC[,m] = Z %*% RHO[,m] / M
 }
-################################################################################
-list.me007 = list.files("input/sensor/", full.names = T)
+################################################################################list.me007 = list.files("input/sensor/", full.names = T)
 sensor2 = lapply(list.me007, read.csv, header = F) %>% data.table::rbindlist()
 names(sensor2) <- c("time", "height")
 sensor2$time = lubridate::as_datetime(sensor2$time, origin="1970-01-01")
@@ -193,7 +192,7 @@ plot(
   x = gnss.data$time,
   type = "l",
   xlab = "date",
-  ylab = "GNSS base",
+  ylab = "Water height(m)",
   xlim = t_lim,
   xaxt = 'n',
   col = "red"
@@ -204,6 +203,9 @@ xlocs <- pretty_dates(xa, 15)
 axis(side = 1,
      at = xlocs,
      labels = format(xlocs, "%d/%m"))
+legend("topleft", legend=c("GNSS-based", "Sensor"),
+       col=c("red", "darkblue"), lty=1:2, cex=0.8, bty = "n")
+
 
 plot(y = PC[, 1], x = gnss.data$time,  
     type = "l",
@@ -233,12 +235,44 @@ axis(side = 1,
 
 plot(sensor$atm, x = as.POSIXct(sensor$time),  
     xlab = "Height",
-     ylab = "Atmospheric", xlim = t_lim, xaxt = 'n', type = "l", col = "red")
+     ylab = "Atmospheric(mbar)", xlim = t_lim, xaxt = 'n', type = "l", col = "red")
 axis(side = 1,
      at = xlocs,
      labels = format(xlocs, "%d/%m"))
 
 ################################################################################
+################################################################################
+################################################################################
+plot(y = PC[, 5], x = gnss.data$time,  
+type = "l", xlab = "Height",
+ylab = "PC4", xlim = t_lim, xaxt = 'n', col = "red")
+plot(y = PC[, 6], x = gnss.data$time,  
+     type = "l", xlab = "Height",
+     ylab = "PC4", xlim = t_lim, xaxt = 'n', col = "red")
+plot(y = PC[, 7], x = gnss.data$time,  
+     type = "l", xlab = "Height",
+     ylab = "PC4", xlim = t_lim, xaxt = 'n', col = "red")
+plot(y = PC[, 8], x = gnss.data$time,  
+     type = "l", xlab = "Height",
+     ylab = "PC4", xlim = t_lim, xaxt = 'n', col = "red")
+plot(y = PC[, 9], x = gnss.data$time,  
+     type = "l", xlab = "Height",
+     ylab = "PC4", xlim = t_lim, xaxt = 'n', col = "red")
+plot(y = PC[, 10], x = gnss.data$time,  
+     type = "l", xlab = "Height",
+     ylab = "PC4", xlim = t_lim, xaxt = 'n', col = "red")
+plot(y = PC[, 11], x = gnss.data$time,  
+     type = "l", xlab = "Height",
+     ylab = "PC4", xlim = t_lim, xaxt = 'n', col = "red")
+plot(y = PC[, 12], x = gnss.data$time,  
+     type = "l", xlab = "Height",
+     ylab = "PC4", xlim = t_lim, xaxt = 'n', col = "red")
+plot(y = PC[, 13], x = gnss.data$time,  
+     type = "l", xlab = "Height",
+     ylab = "PC4", xlim = t_lim, xaxt = 'n', col = "red")
+plot(y = PC[, 14], x = gnss.data$time,  
+     type = "l", xlab = "Height",
+     ylab = "PC4", xlim = t_lim, xaxt = 'n', col = "red")
 ################################################################################
 
 # xwt
@@ -249,6 +283,10 @@ library(lubridate)
 a = approx(gnss.data, n = sum(diff(gnss.data$time)) + 1)
 t = as.POSIXct(a$x, origin = "1970-1-1")
 d1 = cbind(t, a$y)
+
+a1 = approx(sensor2, n= sum(diff(sensor2$time))+1)
+t1 = as.POSIXct(a1$x, origin = "1970-1-1")
+d1 = cbind(t1, a1$y)
 
 a2 = approx(h, n = sum(diff(h$sensor.time)) + 1)
 t2 =  as.POSIXct(a2$x, origin = "1970-1-1")

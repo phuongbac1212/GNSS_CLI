@@ -10,7 +10,7 @@
 # Author: Nicolas ROUSSEL - nicolas.roussel@get.obs-mip.fr
 
 reflexion_algo_helm <- function(R_T,pos_centre_xyz,pos_E_xyz,pos_R_xyz,elevation,hauteur,tolerance_helm){
-      #
+  # print(R_T)
       # R_T : radius of the osculating sphere (gaussian radius of curvature)
       # pos_centre_xyz : cartesian coordinates of the center of the osculating sphere
       # pos_E_xyz : cartesian coordinates of the transmitter (satellite)

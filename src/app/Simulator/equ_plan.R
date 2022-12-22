@@ -10,7 +10,7 @@
 #
 ##################################################################
 
-equ_plan <- function(R_0_init,R_p_init,pos_xyz){
+equ_plan <- function(R_0_init=6378137,R_p_init=6356752.3142,pos_xyz){
 
 #
 # R_0_WGS84 : semi-major axis of the WGS84 ellipsoid

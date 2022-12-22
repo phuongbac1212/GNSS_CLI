@@ -1,9 +1,8 @@
 div {
   margin: auto;
   text-align: center;
-  background: #A7BEB6;
   color = white;
-  font: 14pt "Fira Sans", serif;
+  font: 14pt "Fira Sans", mono;
 }
 
 h1{

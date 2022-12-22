@@ -5,6 +5,8 @@
 ##################################################################
 library(data.table)
 library(shinyFiles)
+library(shiny)
+param = reactiveValues()
 #read parameter before all
 volumes <-
   c(Home = fs::path_home(),
@@ -33,6 +35,8 @@ parameter.read.raw = function() {
 parameter.update.from.input <- function(input) {
   try(expr = {param["dem_file_path"] <<- parseFilePaths(roots = c(wd = '~'), input$DEM_file)$datapath}, silent=T)
   try(expr = {param["algorithm"] <<- input$PARAM_algo}, silent=T)
+  try(expr = {param["basemap"] <<- input$PARAM_basemap}, silent=T)
+  
   try(expr = {param["low_horizontal_mask"] <<- input$PARAM_visibility_hor[1]}, silent=T)
   try(expr = {param["up_horizontal_mask"] <<- input$PARAM_visibility_hor[2]}, silent=T)
   try(expr = {param["low_vertical_mask"] <<- input$PARAM_visibility_ver[1]}, silent=T)
@@ -43,7 +47,11 @@ parameter.update.from.input <- function(input) {
   try(expr = {param["receiver_latitude"] <<- input$input$REC_lat}, silent=T)
   try(expr = {param["receiver_longitude"] <<- input$REC_long}, silent=T)
   try(expr = {param["sp3_file_path"] <<- parseFilePaths(roots =volumes ,input$SAT_file)$datapath}, silent=T)
-  # print(parseFilePaths(roots =volumes ,input$SAT_file))
+  try(expr = {param["SP3_limit_begin"] <<- input$SP3_limit_begin}, silent=T)
+  try(expr = {param["SP3_limit_end"] <<- input$SP3_limit_end}, silent=T)
+  try(expr = {param["SP3_limit_end"] <<- input$SP3_limit_end}, silent=T)
+  try(expr = {param["constelations"] <<- noquote(paste(input$constelations, collapse = ','))}, silent=T)
+    # print(parseFilePaths(roots =volumes ,input$SAT_file))
   save(param, file = "cfg/parameters_temp.RDS")
 }
 

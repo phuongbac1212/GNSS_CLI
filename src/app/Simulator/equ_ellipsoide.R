@@ -10,7 +10,7 @@
 #
 ##################################################################
 
-equ_ellipsoide <- function(R_0_WGS84,R_p_WGS84,pos_xyz,hauteur){
+equ_ellipsoide <- function(R_0_WGS84=6378137,R_p_WGS84=6356752.3142,pos_xyz,hauteur){
 
 #
 # R_0_WGS84 : semi-major axis of the WGS84 ellipsoid

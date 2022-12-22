@@ -34,14 +34,15 @@ res = read.csv("output/result/Result.csv") %>% drop_na(height)
 res$time = lubridate::as_datetime(res$timestamp, origin = "1980-1-6")
 res$height = 7.5 - res$height
 res = filter(res, height != max(height))
+res$group = substr(res$PRN, 2,2)
 
 
 ########## location filter #############
 library(leaflet)
 library(randomcoloR)
-p = unique(res$PRN)
-col = randomColor(count = length(p))
-a = data.frame(1:length(res$PRN), res$PRN)
+p = unique(res$group)
+col = c("red", "blue", "yellow", 'green') #randomColor(count = length(p))
+a = data.frame(1:length(res$group), res$group)
 names(a) = c("A", "B")
 b = data.frame(col, p)
 names(b) = c("A", "B")
@@ -56,11 +57,42 @@ leaflet() %>% addProviderTiles(providers$Esri.WorldImagery) %>% addCircleMarkers
 source("src/func/location_filter.R")
 shp_path = "input/shp/"
 res = location.filter(point.dataframe = res)
-
-
-
 res = my.outlier(res, c("time", "height"), 2, 2) %>% drop_na(height)
 res$group = substr(res$PRN, 2,2)
+
+par(mfrow = c(4, 1),mar = c(2, 4, 0.5, 2), family= "serif", cex = 0.9) # puts 4 plots in one window (2x2)
+x = filter(res, group == "G") %>% arrange(time)
+plot(x$time, x$height, type = "l", col = "red", xaxt="n", ylab = "Height")
+xlocs <- pretty_dates(x$time, 15)
+axis(side = 1,
+     at = xlocs,
+     labels = format(xlocs, "%d/%m"))
+legend("topleft", legend=c(paste("PG :",nrow(x))),
+       col=c("red"), lty=1:2, cex=0.8, bty = "n")
+x = filter(res, group == "R") %>% arrange(time)
+plot(x$time, x$height, type = "l", col = "blue", xaxt="n", ylab = "Height")
+legend("topleft", legend=c(paste("PR :",nrow(x))),
+       col=c("blue"), lty=1:2, cex=0.8, bty = "n")
+axis(side = 1,
+     at = xlocs,
+     labels = format(xlocs, "%d/%m"))
+x = filter(res, group == "E") %>% arrange(time)
+plot(x$time, x$height, type = "l", col = "yellow", xaxt="n", ylab = "Height")
+axis(side = 1,
+     at = xlocs,
+     labels = format(xlocs, "%d/%m"))
+x = filter(res, group == "C") %>% arrange(time)
+legend("topleft", legend=c(paste("PE :",nrow(x))),
+       col=c("yellow"), lty=1:2, cex=0.8, bty = "n")
+plot(x$time, x$height, type = "l", col = "green", xaxt="n",ylab = "Height")
+axis(side = 1,
+     at = xlocs,
+     labels = format(xlocs, "%d/%m"))
+
+legend("topleft", legend=c(paste("PC :",nrow(x))),
+       col=c("green"), lty=1:2, cex=0.8, bty = "n")
+
+
 
 gnss.data = res[, c("height", "time", "group")] %>% group_by(group = round(res$time, "hour")) %>%
   summarise_at(vars(height), list(h_mean_hour = mean))
@@ -86,17 +118,18 @@ for (m in (1:M)) {
   Z = apply(Z, 2, replace_na, 0)
   RC[,m] = Z %*% RHO[,m] / M
 }
-################################################################################list.me007 = list.files("input/sensor/", full.names = T)
+################################################################################
+list.me007 = list.files("input/sensor/", full.names = T)
 sensor2 = lapply(list.me007, read.csv, header = F) %>% data.table::rbindlist()
 names(sensor2) <- c("time", "height")
 sensor2$time = lubridate::as_datetime(sensor2$time, origin="1970-01-01")
 
 sensor2 = dplyr::filter(sensor2, height > 4000)
 sensor2 = my.outlier(sensor2, c("time", "height"), 2, 200)
-sensor2 =  sensor2 %>% group_by(round(time, "hour")) %>%
+sensor2 =  sensor2 %>% group_by(round(time, "mins")) %>%
   summarise_at(vars(height), list(height_mean_hour = mean))
 names(sensor2) <- c("time", "height")
-sensor2$height = 4.3 - sensor2$height / 1000
+sensor2$height = 4.2 - sensor2$height / 1000
 
 list.bme = list.files("input/bme/", full.names = T)
 sensor = lapply(list.bme, read.csv, header = F) %>% data.table::rbindlist()
@@ -184,6 +217,8 @@ sensor2 = filter(sensor2, as.numeric(time) > 1663365600 | as.numeric(time) <1662
 # plot(me007.xts, type = "b")
 # dygraph(me007.xts)
 
+m = inner_join(sensor2,gnss.data, by="time")
+cor(m$height, m$h_mean_hour)
 par(mfrow = c(6, 1),mar = c(2, 4, 0.5, 2), family= "serif", cex = 0.9) # puts 4 plots in one window (2x2)
 
 library(Metrics)
@@ -239,8 +274,16 @@ plot(sensor$atm, x = as.POSIXct(sensor$time),
 axis(side = 1,
      at = xlocs,
      labels = format(xlocs, "%d/%m"))
+###
+ggplot() +
+  xlab("Time") +
+  geom_line(aes(x = as.POSIXct(gnss.data$time), y = PC[,1]), colour = "darkblue") +
+  geom_line(aes(x= as.POSIXct(sensor$time), y = (sensor$atm -1010)/3), colour = "red") +
+  scale_y_continuous("PC01",sec.axis = sec_axis(~.*3+1010, name = "Atmosphere"))+
+  theme(text = element_text(family ="serif", face="bold", size = 14)) +
+  scale_color_manual(name = "-", values = c("Atmosphere" = "darkblue", "PC01" = "red"))
 
-################################################################################
+###############################################################################
 ################################################################################
 ################################################################################
 plot(y = PC[, 5], x = gnss.data$time,  

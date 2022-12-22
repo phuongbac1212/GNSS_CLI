@@ -16,6 +16,8 @@ dem_crs:-
 
 #config relate to ephemeris. .stq for skytraq and .SP3 for satellite orbit file
 sp3_file_path:grg19090.sp3
+SP3_limit_begin:-
+SP3_limit_end:-
 skytraq_file_path:-
 
 #config relate to receiver and antena properties
@@ -51,6 +53,10 @@ low_horizontal_mask:0
 up_horizontal_mask:360
 # algorithm avaiable: sphere, ellipse, plane
 algorithm:sphere
+# basema avaiable: OpenStreetMap, Esri.WorldImagery, try some =))
+basemap:OpenStreetMap
+# update 2022 constelation avaiable: G-GPS, R-GLONASS, E-GALILEO, C-BEIDOU/COMPASS, I-IRNSS, J-QZSS
+constelations:G,R,E,C
 free:-
 
 

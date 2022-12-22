@@ -11,6 +11,7 @@
 ##################################################################
 
 surf_Fresnel <- function(lambda, hauteur, elev){
+  #print(hauteur)
     # lambda: wave length (m)
     # hauteur: height of the receiver (m)
     # elev : satellite elevation (rad)
@@ -34,7 +35,7 @@ surf_Fresnel <- function(lambda, hauteur, elev){
     d <- lambda/2
     b <- sqrt((2*d*hauteur)/sin(elev)+(d/sin(elev))^2)
     a <- b/sin(elev)
-    write.table(a,'a.txt',append=TRUE,quote=FALSE,row.names=FALSE,col.names=FALSE)
+    write.table(paste(lambda, hauteur, elev,a,b, sep = ","),'a.txt',append=TRUE,quote=FALSE,row.names=FALSE,col.names=FALSE)
     write.table(b,'b.txt',append=TRUE,quote=FALSE,row.names=FALSE,col.names=FALSE)
     axes_Fresnel[1] <- a
     axes_Fresnel[2] <- b

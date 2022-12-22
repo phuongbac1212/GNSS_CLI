@@ -12,7 +12,7 @@
 ##################################################################
 
 pos2geo <- function(R_0,R_p,pos_xyz){
-      # print(unlist(pos_xyz))
+      # print((pos_xyz))
       #
       # R_0 : semi-major axis of the given ellipsoid
       # R_p : semi-minor axis of the given ellipsoid
